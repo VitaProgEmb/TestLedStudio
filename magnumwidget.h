@@ -17,6 +17,8 @@ protected:
     void resizeGL(int w, int h) override;
     void paintGL() override;
 
+    void mousePressEvent(QMouseEvent* event) override; // <-- Добавили строку
+
 private:
     std::unique_ptr<LedPatchScene> _scene;
     bool _initialized{false};

@@ -1,78 +1,80 @@
 #include "ledpatchscene.h"
-
-// Подключаем необходимые модули Magnum
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Color.h>
+#include <Magnum/Math/Matrix3.h>
 #include <Magnum/Primitives/Square.h>
 #include <Magnum/Trade/MeshData.h>
 #include <Magnum/MeshTools/Compile.h>
-
-#include <Magnum/Math/Matrix3.h>
+#include <cmath>
+#include <QDebug>
 
 using namespace Magnum::Math::Literals;
 
 LedPatchScene::LedPatchScene() {
-    // 1. Включаем базовые функции OpenGL (сглаживание и тест глубины)
     Magnum::GL::Renderer::enable(Magnum::GL::Renderer::Feature::DepthTest);
-
-    // 2. Создаем геометрию простого квадрата (это будет основа нашей LED панели)
-    Magnum::Trade::MeshData squareData = Magnum::Primitives::squareSolid();
-
-    // 3. Компилируем геометрию в Mesh, который понимает видеокарта
-    _mesh = Magnum::MeshTools::compile(squareData);
+    _mesh = Magnum::MeshTools::compile(Magnum::Primitives::squareSolid());
+    _timeline.start();
 }
 
 LedPatchScene::~LedPatchScene() {}
 
 void LedPatchScene::viewportChanged(int width, int height) {
-    // Обновляем область вывода при изменении размеров окна
     Magnum::GL::defaultFramebuffer.setViewport({{}, {width, height}});
 }
 
 void LedPatchScene::draw() {
-    // 1. Очищаем экран фоновым цветом
+    _timeline.nextFrame();
+    float time = _timeline.previousFrameTime();
+
     Magnum::GL::Renderer::setClearColor(0x1a1a1a_rgbf);
     Magnum::GL::defaultFramebuffer.clear(
         Magnum::GL::FramebufferClear::Color | Magnum::GL::FramebufferClear::Depth
         );
 
-    // 2. Параметры нашей светодиодной матрицы
-    const int rows = 8;        // Количество строк
-    const int cols = 8;        // Количество столбцов
+    float startX = -((_cols - 1) * _spacing) / 2.0f;
+    float startY = -((_rows - 1) * _spacing) / 2.0f;
 
-    const float ledSize = 0.05f;  // Размер одного светодиода (уменьшили)
-    const float spacing = 0.07f;  // Шаг сетки (размер диода + зазор между ними)
+    // Плавная пульсация яркости от синуса времени
+    float pulse = 0.75f + std::sin(time * 3.0f) * 0.25f;
 
-    // Вычисляем стартовую точку (левый нижний угол), чтобы матрица была строго по центру экрана
-    float startX = -((cols - 1) * spacing) / 2.0f;
-    float startY = -((rows - 1) * spacing) / 2.0f;
+    for(int r = 0; r < _rows; ++r) {
+        for(int c = 0; c < _cols; ++c) {
+            float posX = startX + (c * _spacing);
+            float posY = startY + (r * _spacing);
 
-    // 3. Двойной цикл для отрисовки сетки светодиодов
-    for(int r = 0; r < rows; ++r) {
-        for(int c = 0; c < cols; ++c) {
-            // Вычисляем позицию текущего диода на экране
-            float posX = startX + (c * spacing);
-            float posY = startY + (r * spacing);
-
-            // Строим матрицу трансформации: сначала масштабируем примитив, затем сдвигаем в координаты posX, posY
             Magnum::Matrix3 transformation =
                 Magnum::Matrix3::translation({posX, posY}) *
-                Magnum::Matrix3::scaling(Magnum::Vector2{ledSize});
+                Magnum::Matrix3::scaling(Magnum::Vector2{_ledSize});
 
-            // Передаем матрицу положения текущего диода в шейдер
             _shader.setTransformationProjectionMatrix(transformation);
 
-            // Делаем чередование цветов для теста (например, шахматный порядок или просто один цвет)
             if((r + c) % 2 == 0) {
-                _shader.setColor(0x00ff00_rgbf); // Ярко-зеленый
+                _shader.setColor(Magnum::Color3{0.0f, 1.0f * pulse, 0.0f});
             } else {
-                _shader.setColor(0x00aa00_rgbf); // Темно-зеленый (для эффекта разделения диодов)
+                _shader.setColor(Magnum::Color3{0.0f, 0.6f * pulse, 0.0f});
             }
 
-            // Команда видеокарте отрисовать этот конкретный диод
             _shader.draw(_mesh);
         }
     }
 }
 
+void LedPatchScene::handleMouseClick(float x, float y) {
+    float startX = -((_cols - 1) * _spacing) / 2.0f;
+    float startY = -((_rows - 1) * _spacing) / 2.0f;
+
+    for(int r = 0; r < _rows; ++r) {
+        for(int c = 0; c < _cols; ++c) {
+            float posX = startX + (c * _spacing);
+            float posY = startY + (r * _spacing);
+
+            if(x >= (posX - _ledSize) && x <= (posX + _ledSize) &&
+                y >= (posY - _ledSize) && y <= (posY + _ledSize))
+            {
+                qDebug() << "Кликнули по светодиоду! Строка:" << r << "Столбец:" << c;
+                return;
+            }
+        }
+    }
+}
