@@ -17,45 +17,26 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    m_core = new Core(this);
-    m_player = new ISFPlayer(this);
-    ui->centralwidget->layout()->addWidget(m_player);
     connect(ui->pushButton, &QPushButton::clicked, this, &MainWindow::btnClick);
     connect(ui->horizontalSlider, &QSlider::valueChanged, this, &MainWindow::sliderChenge);
 
-    connect(m_player, &ISFPlayer::shaderLoaded, this, &MainWindow::buildDynamicUI);
 
     connect(ui->loadSheder, &QPushButton::clicked, this, &MainWindow::on_loadButton_clicked);
     // ui->quickWidget->setResizeMode(QQuickWidget::SizeRootObjectToView);
 
     // 1. Включаем растягивание содержимого QML под размеры виджета C++
-    ui->quickWidget->setResizeMode(QQuickWidget::SizeRootObjectToView);
+
 
     // 2. Делаем фон виджета прозрачным (убирает белый цвет)
-    ui->quickWidget->setStyleSheet("background: transparent;");
-    ui->quickWidget->setClearColor(Qt::transparent);
 
-    // 3. Настройка политики размеров: по ширине растет, по высоте фиксирован
 
-    // 4. Динамически связываем высоту QQuickWidget с высотой QML-карточки
-    // if (ui->quickWidget->rootObject()) {
-    //     // Устанавливаем стартовую высоту из QML
-    //     ui->quickWidget->setFixedHeight(ui->quickWidget->rootObject()->height());
 
-    //     // При изменении высоты в QML, меняем высоту QQuickWidget (захватываем [this])
-    //     connect(ui->quickWidget->rootObject(), &QQuickItem::heightChanged, [this]() {
-    //         ui->quickWidget->setFixedHeight(ui->quickWidget->rootObject()->height());
-    //     });
-    // }
 
-    ui->quickWidget->setSource(QUrl(QStringLiteral("qrc:/qmls/kontrollerWidget.qml")));
 
 
 
     //=========================================================//
-    QTimer::singleShot(500,[=](){
-        m_player->loadFile("c:/Users/Windows 10 Pro/Desktop/Shaders/Best.fs");
-    });
+
 
 
 }
@@ -72,7 +53,6 @@ void MainWindow::on_loadButton_clicked() {
 
     if (!filePath.isEmpty()) {
         // Вызываем метод загрузки у нашего виджета
-        m_player->loadFile(filePath);
 
         // Опционально: выведем путь в заголовок окна, чтобы знать что загружено
         this->setWindowTitle("ISF Player - " + filePath.section('/', -1));
@@ -110,7 +90,6 @@ void MainWindow::buildDynamicUI(const QJsonArray &inputs) {
 
             connect(slider, &QSlider::valueChanged, [=](int val) {
                 float realVal = min + (float(val) / 1000.0f) * (max - min);
-                m_player->setUniformFloat(name, realVal);
             });
             // ui->dockWidget->widget()->layout()->addWidget(label);
             ui->controlsLayout->addWidget(label);
@@ -141,7 +120,6 @@ void MainWindow::buildDynamicUI(const QJsonArray &inputs) {
                 // Передаем как вектор
                 qDebug() << "call slider update :x " << x << "y: " << y << "name :" << name;
 
-                m_player->setUniformVec2(name, QVector2D(x, y));
             };
 
             connect(sliderX, &QSlider::valueChanged, updatePoint);

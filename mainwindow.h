@@ -2,8 +2,6 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "core.h"
-#include "isfplayer.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -24,8 +22,6 @@ private slots:
     void sliderChenge(int val);
     void on_loadButton_clicked();
 private:
-    ISFPlayer *m_player{nullptr};
-    Core *m_core;
     void buildDynamicUI(const QJsonArray &inputs);
     Ui::MainWindow *ui;
 };

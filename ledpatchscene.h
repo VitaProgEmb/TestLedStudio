@@ -1,30 +1,19 @@
 #pragma once
+#include <Magnum/GL/DefaultFramebuffer.h>
+#include <Magnum/GL/Buffer.h>
+#include <Magnum/GL/Mesh.h>
+#include <Magnum/Shaders/FlatGL.h>
 
-#include <QGraphicsScene>
-#include <QGraphicsEllipseItem>
-#include <QGraphicsLineItem>
-#include <QGraphicsSceneMouseEvent>
-#include <QList>
-#include "ledpatch.h"
-
-
-// Класс Интерактивной Сцены Патча
-class LedPatchScene : public QGraphicsScene {
-    Q_OBJECT
+class LedPatchScene {
 public:
-    explicit LedPatchScene(QObject *parent = nullptr);
+    LedPatchScene();  // Конструктор
+    ~LedPatchScene(); // Деструктор
 
-    QList<LedNodeItem*> ledNodes;
-    QList<LedCableItem*> ledCables;
-
-    int currentPort = 0; // Текущий порт для новых диодов
-
-signals:
-    void nodeCountChanged(int count); // Сигнал для вывода статистики в UI
-
-protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    void viewportChanged(int width, int height);
+    void draw();
 
 private:
-    LedNodeItem *lastClickedNode = nullptr;
+    // Пример объектов Magnum, которые вы будете инициализировать в .cpp
+    Magnum::GL::Mesh _mesh;
+    Magnum::Shaders::FlatGL2D _shader;
 };

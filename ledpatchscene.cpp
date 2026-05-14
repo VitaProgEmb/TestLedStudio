@@ -1,50 +1,24 @@
-#include "ledpatchscene.h"
-#include <QBrush>
-#include <QPen>
+#include <Magnum/GL/DefaultFramebuffer.h>
+#include <Magnum/GL/Renderer.h>
 
-
-
-
-
-
-
-// === Реализация Сцены Патча ===
-LedPatchScene::LedPatchScene(QObject *parent) : QGraphicsScene(parent) {
-    setSceneRect(0, 0, 1000, 1000);
-    setBackgroundBrush(QBrush(QColor(30, 30, 30))); // Темно-серый фон редактора
-}
-
-void LedPatchScene::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-    // ЛКМ — ставим светодиод в цепочку
-    if (event->button() == Qt::LeftButton) {
-        qreal u = event->scenePos().x() / sceneRect().width();
-        qreal v = event->scenePos().y() / sceneRect().height();
-
-
-
-
-
-        int newId = ledNodes.size();
-        LedNodeItem *newNode = new LedNodeItem(newId, currentPort, QPointF(u, v));
-        newNode->setPos(event->scenePos());
-
-        addItem(newNode);
-        ledNodes.append(newNode);
-
-        // Соединяем проводом только если прошлый диод на этом же порту
-        if (lastClickedNode && lastClickedNode->portId == currentPort) {
-            LedCableItem *cable = new LedCableItem(lastClickedNode, newNode);
-            addItem(cable);
-            ledCables.append(cable);
-        }
-
-        lastClickedNode = newNode;
-        emit nodeCountChanged(ledNodes.size());
-    }
-    // ПКМ — обрываем связь, чтобы начать новую ветку/стрип
-    else if (event->button() == Qt::RightButton) {
-        lastClickedNode = nullptr;
+class LedPatchScene {
+public:
+    LedPatchScene() {
+        // Конструктор: тут настраиваем базовые параметры OpenGL через Magnum
+        Magnum::GL::Renderer::enable(Magnum::GL::Renderer::Feature::DepthTest);
     }
 
-    QGraphicsScene::mousePressEvent(event);
-}
+    void viewportChanged(int width, int height) {
+        // Изменение размеров: обновляем область вывода Magnum
+        Magnum::GL::defaultFramebuffer.setViewport({{}, {width, height}});
+    }
+
+    void draw() {
+        // Отрисовка: очищаем экран и рисуем ваши LED-панели/сцену
+        Magnum::GL::defaultFramebuffer.clear(
+            Magnum::GL::FramebufferClear::Color | Magnum::GL::FramebufferClear::Depth
+            );
+
+        // ТУТ БУДЕТ ВАШ КОД ОТРИСОВКИ (Отрендерить сетку, диоды, патчи и т.д.)
+    }
+};

@@ -19,7 +19,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS OpenGL OpenGLWidgets)
 find_package(Qt6 REQUIRED COMPONENTS QuickWidgets)
 find_package(Corrade REQUIRED)
-find_package(Magnum REQUIRED GL) # Указываем компонент GL (OpenGL)
+find_package(Magnum REQUIRED GL Shaders WindowlessWglApplication) # Указываем компонент GL (OpenGL)
 
 
 
@@ -36,15 +36,11 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(untitled1
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        leddiscovery.h leddiscovery.cpp
-        core.h core.cpp
-        t500k_controllerprotocol.h t500k_controllerprotocol.cpp
-        isfplayer.h isfplayer.cpp
-        kontrollerWidget.qml
         resurce.qrc
         ledpatchscene.h ledpatchscene.cpp
-        ledpatch.h ledpatch.cpp
-        magnumwidget.h magnumwidget.cpp
+
+        magnumwidget.h
+        magnumwidget.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET untitled1 APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -73,10 +69,14 @@ target_link_libraries(untitled1 PRIVATE Qt6::QuickWidgets)
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
 
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    Corrade::Utility      # Базовые утилиты Corrade
-    Magnum::Magnum        # Основной движок Magnum
-    Magnum::GL            # Модуль для работы с OpenGL
+        Magnum::Shaders
+        Magnum::GL
+        Magnum::Magnum
+        Corrade::Utility
+        Magnum::WindowlessWglApplication  # <-- Легальная цель линковщика для Windows
+        opengl32
 )
 
 
