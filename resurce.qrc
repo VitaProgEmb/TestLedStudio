@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/qmls">
+        <file>kontrollerWidget.qml</file>
+    </qresource>
+</RCC>
