@@ -42,7 +42,7 @@ void LedPatchScene::draw(unsigned int qtFramebufferId) {
         {{}, {Magnum::GL::defaultFramebuffer.viewport().size()}}
         );
 
-    // 2. Активируем его и очищаем темно-серым цветом СТРОГО этот буфер
+    // 2. Активируем его и очищаем темно-серым цветом строго этот буфер
     qtFramebuffer.bind();
     Magnum::GL::Renderer::setClearColor(0x1a1a1a_rgbf);
     qtFramebuffer.clear(Magnum::GL::FramebufferClear::Color | Magnum::GL::FramebufferClear::Depth);
@@ -63,21 +63,36 @@ void LedPatchScene::draw(unsigned int qtFramebufferId) {
         lineMesh.setCount(_placedLeds.size());
 
         _shader.setTransformationProjectionMatrix(Magnum::Matrix3{});
-        _shader.setColor(Magnum::Color3{0.0f, 0.5f, 0.8f}); // Синие линии
+        _shader.setColor(Magnum::Color3{0.0f, 0.5f, 0.8f}); // Синие линии-провода
         _shader.draw(lineMesh);
     }
 
-    // 4. ОТРИСОВКА САМИХ СВЕТОДИОДОВ
+    // =================================================================
+    // 4. ИСПРАВЛЕНИЕ ПРОПОРЦИЙ И ОТРИСОВКА КВАДРАТНЫХ СВЕТОДИОДОВ
+    // =================================================================
+
+    // Получаем текущую ширину и высоту области отрисовки из вьюпорта Magnum
+    float width = Magnum::GL::defaultFramebuffer.viewport().size().x();
+    float height = Magnum::GL::defaultFramebuffer.viewport().size().y();
+
+    // Вычисляем коэффициент соотношения сторон (например, 800 / 600 = 1.333)
+    float aspectRatio = width / height;
+
     for(const auto& ledPos : _placedLeds) {
+        // Корректируем масштаб: делим размер по горизонтали на aspectRatio.
+        // Это компенсирует прямоугольность окна Qt.
+        Magnum::Vector2 correctedScale{ _ledSize / aspectRatio, _ledSize };
+
         Magnum::Matrix3 transformation =
             Magnum::Matrix3::translation(ledPos) *
-            Magnum::Matrix3::scaling(Magnum::Vector2{_ledSize});
+            Magnum::Matrix3::scaling(correctedScale);
 
         _shader.setTransformationProjectionMatrix(transformation);
         _shader.setColor(Magnum::Color3{0.0f, 1.0f * pulse, 0.5f * pulse}); // Зеленые леды
         _shader.draw(_mesh);
     }
 }
+
 
 void LedPatchScene::handleMouseClick(float x, float y) {
     // Создаем точку с координатами клика курсора
