@@ -39,20 +39,13 @@ void MagnumWidget::paintGL() {
         makeCurrent();
 
         if(Magnum::GL::Context::hasCurrent()) {
-            // 1. Сообщаем Magnum, что входим во внешний контекст Qt
             Magnum::GL::Context::current().resetState(Magnum::GL::Context::State::EnterExternal);
-
-            // 2. ПРЯМАЯ ПРИВЯЗКА ДЛЯ Qt6:
-            // Получаем ID буфера от Qt (через defaultFramebufferObject())
-            // и принудительно активируем его на уровне видеокарты через WinAPI/OpenGL
-            glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
         }
 
-        // 3. Вызываем отрисовку нашей сцены
-        _scene->draw();
+        // Передаем ID текущего буфера Qt ( defaultFramebufferObject() ) в метод draw сцены!
+        _scene->draw(defaultFramebufferObject());
 
         if(Magnum::GL::Context::hasCurrent()) {
-            // 4. Возвращаем управление системе Qt
             Magnum::GL::Context::current().resetState(Magnum::GL::Context::State::ExitExternal);
         }
     }

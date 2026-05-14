@@ -12,7 +12,7 @@ public:
     ~LedPatchScene();
 
     void viewportChanged(int width, int height);
-    void draw();
+    void draw(unsigned int qtFramebufferId);
 
     // Сюда будут прилетать точные координаты клика мыши
     void handleMouseClick(float x, float y);
