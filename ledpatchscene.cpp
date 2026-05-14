@@ -8,6 +8,12 @@
 #include <Magnum/MeshTools/Compile.h>
 #include <cmath>
 #include <QDebug>
+#include <Magnum/GL/Buffer.h>
+#include <Corrade/Containers/ArrayView.h>
+#include <Magnum/GL/Context.h>
+// #include <Magnum/GL/ContextState.h>
+#include <Magnum/GL/Framebuffer.h>
+
 
 using namespace Magnum::Math::Literals;
 
@@ -15,6 +21,8 @@ LedPatchScene::LedPatchScene() {
     Magnum::GL::Renderer::enable(Magnum::GL::Renderer::Feature::DepthTest);
     _mesh = Magnum::MeshTools::compile(Magnum::Primitives::squareSolid());
     _timeline.start();
+
+    // Изначально вектор пуст — на экране нет ни одного диода!
 }
 
 LedPatchScene::~LedPatchScene() {}
@@ -28,53 +36,65 @@ void LedPatchScene::draw() {
     float time = _timeline.previousFrameTime();
 
     Magnum::GL::Renderer::setClearColor(0x1a1a1a_rgbf);
+
+    // Очищаем тот буфер, который мы только что привязали в paintGL()
     Magnum::GL::defaultFramebuffer.clear(
         Magnum::GL::FramebufferClear::Color | Magnum::GL::FramebufferClear::Depth
         );
 
-    float startX = -((_cols - 1) * _spacing) / 2.0f;
-    float startY = -((_rows - 1) * _spacing) / 2.0f;
 
-    // Плавная пульсация яркости от синуса времени
-    float pulse = 0.75f + std::sin(time * 3.0f) * 0.25f;
+    if(_placedLeds.empty()) return;
 
-    for(int r = 0; r < _rows; ++r) {
-        for(int c = 0; c < _cols; ++c) {
-            float posX = startX + (c * _spacing);
-            float posY = startY + (r * _spacing);
+    float pulse = 0.85f + std::sin(time * 5.0f) * 0.15f;
 
-            Magnum::Matrix3 transformation =
-                Magnum::Matrix3::translation({posX, posY}) *
-                Magnum::Matrix3::scaling(Magnum::Vector2{_ledSize});
+    // =================================================================
+    // 1. ОТРИСОВКА СОЕДИНЯЮЩИХ ЛИНИЙ (Строим ломаную линию между диодами)
+    // =================================================================
+    if(_placedLeds.size() > 1) {
+        // Создаем временную сетку для линий
+        Magnum::GL::Mesh lineMesh;
+        lineMesh.setPrimitive(Magnum::GL::MeshPrimitive::LineStrip); // Режим рисования линий
 
-            _shader.setTransformationProjectionMatrix(transformation);
+        // Передаем координаты наших диодов в видеопамять
+        Magnum::GL::Buffer vertexBuffer;
+        // ИСПРАВЛЕНО: передаем сырой указатель на данные вектора и его точный размер в байтах
+        vertexBuffer.setData(Corrade::Containers::arrayView(_placedLeds.data(), _placedLeds.size()));
 
-            if((r + c) % 2 == 0) {
-                _shader.setColor(Magnum::Color3{0.0f, 1.0f * pulse, 0.0f});
-            } else {
-                _shader.setColor(Magnum::Color3{0.0f, 0.6f * pulse, 0.0f});
-            }
 
-            _shader.draw(_mesh);
-        }
+        lineMesh.addVertexBuffer(vertexBuffer, 0, Magnum::Shaders::FlatGL2D::Position{});
+        lineMesh.setCount(_placedLeds.size());
+
+        // Сбрасываем трансформацию в единичную, чтобы линии рисовались по точным координатам кликов
+        _shader.setTransformationProjectionMatrix(Magnum::Matrix3{});
+
+        // Задаем цвет линий (например, тускло-синий, как провода)
+        _shader.setColor(Magnum::Color3{0.0f, 0.5f, 0.8f});
+        _shader.draw(lineMesh);
+    }
+
+    // =================================================================
+    // 2. ОТРИСОВКА САМИХ СВЕТОДИОДОВ
+    // =================================================================
+    for(const auto& ledPos : _placedLeds) {
+        Magnum::Matrix3 transformation =
+            Magnum::Matrix3::translation(ledPos) *
+            Magnum::Matrix3::scaling(Magnum::Vector2{_ledSize});
+
+        _shader.setTransformationProjectionMatrix(transformation);
+
+        // Яркий неоново-зеленый цвет для самих точек-диодов
+        _shader.setColor(Magnum::Color3{0.0f, 1.0f * pulse, 0.5f * pulse});
+        _shader.draw(_mesh);
     }
 }
 
 void LedPatchScene::handleMouseClick(float x, float y) {
-    float startX = -((_cols - 1) * _spacing) / 2.0f;
-    float startY = -((_rows - 1) * _spacing) / 2.0f;
+    // Создаем точку с координатами клика курсора
+    Magnum::Vector2 clickPosition{x, y};
 
-    for(int r = 0; r < _rows; ++r) {
-        for(int c = 0; c < _cols; ++c) {
-            float posX = startX + (c * _spacing);
-            float posY = startY + (r * _spacing);
+    // ГЛАВНОЕ ДЕЙСТВИЕ: добавляем новый светодиод в наш список!
+    _placedLeds.push_back(clickPosition);
 
-            if(x >= (posX - _ledSize) && x <= (posX + _ledSize) &&
-                y >= (posY - _ledSize) && y <= (posY + _ledSize))
-            {
-                qDebug() << "Кликнули по светодиоду! Строка:" << r << "Столбец:" << c;
-                return;
-            }
-        }
-    }
+    qDebug() << "Поставили новый светодиод в координатах OpenGL: X =" << x << "Y =" << y;
+    qDebug() << "Всего светодиодов на сцене:" << _placedLeds.size();
 }

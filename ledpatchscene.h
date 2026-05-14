@@ -2,7 +2,9 @@
 
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/Shaders/FlatGL.h>
-#include <Magnum/Timeline.h> // <-- Исправили путь к таймлайну Magnum
+#include <Magnum/Timeline.h>
+#include <Magnum/Math/Vector2.h> // Подключаем векторы координат Magnum
+#include <vector>
 
 class LedPatchScene {
 public:
@@ -12,16 +14,17 @@ public:
     void viewportChanged(int width, int height);
     void draw();
 
+    // Сюда будут прилетать точные координаты клика мыши
     void handleMouseClick(float x, float y);
 
 private:
     Magnum::GL::Mesh _mesh;
     Magnum::Shaders::FlatGL2D _shader;
+    Magnum::Timeline _timeline;
 
-    Magnum::Timeline _timeline; // <-- Исправили тип на Magnum::Timeline
+    // Фиксированный размер для каждого устанавливаемого светодиода
+    const float _ledSize = 0.04f;
 
-    const int _rows = 8;
-    const int _cols = 8;
-    const float _ledSize = 0.05f;
-    const float _spacing = 0.07f;
+    // Динамический массив, который хранит координаты ВСЕХ установленных светодиодов
+    std::vector<Magnum::Vector2> _placedLeds;
 };
