@@ -9,6 +9,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_PREFIX_PATH "C:/Developer/magnum")
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Network)
@@ -16,6 +18,8 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
 # В CMakeLists.txt
 find_package(Qt6 REQUIRED COMPONENTS OpenGL OpenGLWidgets)
 find_package(Qt6 REQUIRED COMPONENTS QuickWidgets)
+find_package(Corrade REQUIRED)
+find_package(Magnum REQUIRED GL) # Указываем компонент GL (OpenGL)
 
 
 
@@ -40,6 +44,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         resurce.qrc
         ledpatchscene.h ledpatchscene.cpp
         ledpatch.h ledpatch.cpp
+        magnumwidget.h magnumwidget.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET untitled1 APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -67,6 +72,14 @@ target_link_libraries(untitled1 PRIVATE Qt6::QuickWidgets)
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
 # explicit, fixed bundle identifier manually though.
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    Corrade::Utility      # Базовые утилиты Corrade
+    Magnum::Magnum        # Основной движок Magnum
+    Magnum::GL            # Модуль для работы с OpenGL
+)
+
+
 if(${QT_VERSION} VERSION_LESS 6.1.0)
   set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.untitled1)
 endif()
