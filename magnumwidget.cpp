@@ -1,37 +1,58 @@
-#include "magnumwidget.h"
-
-// 1. Подключаем базовые заголовки Magnum
+// 1. СТРОГО ПЕРВЫМИ подключаем Magnum
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/OpenGL.h>
-
-// 2. Подключаем открытый не абстрактный мост контекста платформы
 #include <Magnum/Platform/GLContext.h>
 
-MagnumWidget::MagnumWidget(QWindow* parent) : QWindow(parent) {
-    setSurfaceType(QWindow::OpenGLSurface);
-}
+// 2. Только потом подключаем наш заголовок и сцену
+#include "magnumwidget.h"
+#include "ledpatchscene.h"
+
+MagnumWidget::MagnumWidget(QWidget* parent) : QOpenGLWidget(parent) {}
 
 MagnumWidget::~MagnumWidget() {}
 
-void MagnumWidget::exposeEvent(QExposeEvent* event) {
-    Q_UNUSED(event);
-    if (isExposed()) {
-        render();
+void MagnumWidget::initializeGL() {
+    // Делаем текущий контекст Qt активным
+    makeCurrent();
+
+    if(!_initialized) {
+        if(!Magnum::GL::Context::hasCurrent()) {
+            // Инициализируем мост Magnum поверх контекста Qt
+            static Magnum::Platform::GLContext context;
+        }
+
+        _scene = std::make_unique<LedPatchScene>();
+        _scene->viewportChanged(width(), height());
+        _initialized = true;
     }
 }
 
-void MagnumWidget::render() {
-    if(!Magnum::GL::Context::hasCurrent()) {
-        // Конструктор GLContext полностью открыт (public).
-        // Он не абстрактный, у него нет параметров.
-        // Он берет текущий активный OpenGL-контекст от QWindow,
-        // безопасно инициализирует Magnum и подгружает функции flextGLInit.
-        static Magnum::Platform::GLContext context;
+void MagnumWidget::resizeGL(int w, int h) {
+    if(_initialized && _scene) {
+        makeCurrent();
+        // Сбрасываем кэш состояний, так как Qt мог изменить параметры OpenGL
+        if(Magnum::GL::Context::hasCurrent()) {
+            Magnum::GL::Context::current().resetState(Magnum::GL::Context::State::EnterExternal);
+        }
+        _scene->viewportChanged(w, h);
     }
+}
 
-    // Очищаем экран средствами Magnum (окно станет черным/темно-серым)
-    Magnum::GL::defaultFramebuffer.clear(Magnum::GL::FramebufferClear::Color);
+void MagnumWidget::paintGL() {
+    if(_initialized && _scene) {
+        makeCurrent();
 
-    requestUpdate();
+        // КРИТИЧЕСКИ ВАЖНО: говорим Magnum, что он входит во внешний контекст Qt.
+        // Это заставит движок принудительно обновить внутренние указатели на буфер кадра.
+        if(Magnum::GL::Context::hasCurrent()) {
+            Magnum::GL::Context::current().resetState(Magnum::GL::Context::State::EnterExternal);
+        }
+
+        _scene->draw();
+
+        // Говорим Magnum, что мы возвращаем управление обратно системе Qt
+        Magnum::GL::Context::current().resetState(Magnum::GL::Context::State::ExitExternal);
+    }
+    update();
 }

@@ -1,17 +1,23 @@
 #pragma once
 
-#include <QtGui/QWindow>
+#include <QtOpenGLWidgets/QOpenGLWidget>
+#include <memory>
 
-class MagnumWidget: public QWindow {
+class LedPatchScene;
+
+class MagnumWidget : public QOpenGLWidget {
     Q_OBJECT
 
 public:
-    explicit MagnumWidget(QWindow* parent = nullptr);
+    explicit MagnumWidget(QWidget* parent = nullptr);
     ~MagnumWidget() override;
 
 protected:
-    void exposeEvent(QExposeEvent* event) override;
+    void initializeGL() override;
+    void resizeGL(int w, int h) override;
+    void paintGL() override;
 
 private:
-    void render();
+    std::unique_ptr<LedPatchScene> _scene;
+    bool _initialized{false};
 };

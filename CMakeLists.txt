@@ -19,7 +19,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS OpenGL OpenGLWidgets)
 find_package(Qt6 REQUIRED COMPONENTS QuickWidgets)
 find_package(Corrade REQUIRED)
-find_package(Magnum REQUIRED GL Shaders WindowlessWglApplication) # Указываем компонент GL (OpenGL)
+find_package(Magnum REQUIRED GL Shaders WindowlessWglApplication Primitives MeshTools) # Указываем компонент GL (OpenGL)
 
 
 
@@ -71,11 +71,14 @@ target_link_libraries(untitled1 PRIVATE Qt6::QuickWidgets)
 
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
+        Qt6::Widgets
         Magnum::Shaders
         Magnum::GL
         Magnum::Magnum
         Corrade::Utility
-        Magnum::WindowlessWglApplication  # <-- Легальная цель линковщика для Windows
+        Magnum::WindowlessWglApplication
+        Magnum::Primitives    # <-- Добавили
+        Magnum::MeshTools     # <-- Добавили
         opengl32
 )
 

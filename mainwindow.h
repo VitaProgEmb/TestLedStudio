@@ -18,11 +18,8 @@ public:
     ~MainWindow() override;
 
 private slots:
-    void btnClick();
-    void sliderChenge(int val);
-    void on_loadButton_clicked();
+
 private:
-    void buildDynamicUI(const QJsonArray &inputs);
     Ui::MainWindow *ui;
 };
 #endif // MAINWINDOW_H
